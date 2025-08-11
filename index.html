@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>My Calendar (Offline MVP)</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#111827">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <h1>My Calendar</h1>
+    <div class="actions">
+      <button id="exportBtn" class="btn">Export</button>
+      <label for="importInput" class="btn">Import</label>
+      <input id="importInput" type="file" accept="application/json" hidden />
+      <button id="installBtn" class="btn" style="display:none">Install App</button>
+    </div>
+  </header>
+
+  <main id="scrollContainer" class="scroll-container" aria-label="Scrollable day list">
+    <!-- Days will be injected here -->
+  </main>
+
+  <template id="dayTemplate">
+    <section class="day collapsed" data-date="">
+      <header class="day-header">
+        <div class="day-title"></div>
+        <div class="task-preview">
+          <span class="pill task1"></span>
+          <span class="pill task2"></span>
+          <span class="pill task3"></span>
+        </div>
+      </header>
+      <div class="day-body">
+        <div class="tasks">
+          <label>Top 3 Tasks</label>
+          <div class="task-row">
+            <input type="text" class="task-input" data-idx="0" placeholder="Task 1" />
+          </div>
+          <div class="task-row">
+            <input type="text" class="task-input" data-idx="1" placeholder="Task 2" />
+          </div>
+          <div class="task-row">
+            <input type="text" class="task-input" data-idx="2" placeholder="Task 3" />
+          </div>
+        </div>
+        <div class="notes">
+          <label>Notes</label>
+          <textarea class="notes-input" placeholder="Write your notes for this day..."></textarea>
+        </div>
+        <div class="controls">
+          <button class="btn save-btn">Save</button>
+          <button class="btn subtle collapse-btn">Collapse</button>
+        </div>
+      </div>
+    </section>
+  </template>
+
+  <script src="script.js"></script>
+</body>
+</html>
