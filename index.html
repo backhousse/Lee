@@ -5,19 +5,34 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>My Calendar (Offline MVP)</title>
   <link rel="manifest" href="manifest.webmanifest">
-  <meta name="theme-color" content="#111827">
+  <meta name="theme-color" content="#0b1020">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="app-header">
-    <h1>My Calendar</h1>
+    <div class="brand">
+      <div class="logo-dot"></div>
+      <h1>My Calendar</h1>
+    </div>
     <div class="actions">
       <button id="exportBtn" class="btn">Export</button>
       <label for="importInput" class="btn">Import</label>
       <input id="importInput" type="file" accept="application/json" hidden />
-      <button id="installBtn" class="btn" style="display:none">Install App</button>
+      <button id="installBtn" class="btn" style="display:none">Install</button>
     </div>
   </header>
+
+  <div class="subheader">
+    <div class="range">
+      <span class="tag" id="minDateLabel"></span>
+      <span class="sep">→</span>
+      <span class="tag" id="maxDateLabel"></span>
+    </div>
+    <div class="toolbar">
+      <button id="todayBtn" class="chip">Today</button>
+      <button id="collapseAllBtn" class="chip">Collapse all</button>
+    </div>
+  </div>
 
   <main id="scrollContainer" class="scroll-container" aria-label="Scrollable day list">
     <!-- Days will be injected here -->
@@ -34,24 +49,26 @@
         </div>
       </header>
       <div class="day-body">
-        <div class="tasks">
-          <label>Top 3 Tasks</label>
-          <div class="task-row">
-            <input type="text" class="task-input" data-idx="0" placeholder="Task 1" />
+        <div class="body-inner">
+          <div class="tasks card">
+            <label>Top 3 Tasks</label>
+            <div class="task-row">
+              <input type="text" class="task-input" data-idx="0" placeholder="Task 1" />
+            </div>
+            <div class="task-row">
+              <input type="text" class="task-input" data-idx="1" placeholder="Task 2" />
+            </div>
+            <div class="task-row">
+              <input type="text" class="task-input" data-idx="2" placeholder="Task 3" />
+            </div>
           </div>
-          <div class="task-row">
-            <input type="text" class="task-input" data-idx="1" placeholder="Task 2" />
+          <div class="notes card">
+            <label>Notes</label>
+            <textarea class="notes-input" placeholder="Write your notes for this day..."></textarea>
           </div>
-          <div class="task-row">
-            <input type="text" class="task-input" data-idx="2" placeholder="Task 3" />
-          </div>
-        </div>
-        <div class="notes">
-          <label>Notes</label>
-          <textarea class="notes-input" placeholder="Write your notes for this day..."></textarea>
         </div>
         <div class="controls">
-          <button class="btn save-btn">Save</button>
+          <button class="btn primary save-btn">Save</button>
           <button class="btn subtle collapse-btn">Collapse</button>
         </div>
       </div>

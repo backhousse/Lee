@@ -1,5 +1,5 @@
 // Minimal offline-first cache for static assets (app shell)
-const CACHE_NAME = 'calendar-mvp-v1';
+const CACHE_NAME = 'calendar-mvp-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -22,14 +22,13 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const req = event.request;
-  // Network first for HTML, cache first for others
   if (req.mode === 'navigate') {
     event.respondWith(
       fetch(req).then(res => {
         const resClone = res.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(req, resClone));
         return res;
-      }).catch(() => caches.match(req))
+      }).catch(() => caches.match('./index.html'))
     );
   } else {
     event.respondWith(
