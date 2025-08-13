@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>My Calendar (v3)</title>
+  <title>My Calendar (Offline v3)</title>
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#0b1020">
   <link rel="stylesheet" href="styles.css">
@@ -12,7 +12,7 @@
   <header class="app-header">
     <div class="brand">
       <div class="logo-dot"></div>
-      <h1>Locked In Calender 2025</h1>
+      <h1>My Calendar</h1>
     </div>
     <div class="actions">
       <button id="exportBtn" class="btn">Export</button>
@@ -42,13 +42,12 @@
       <header class="day-header">
         <div class="head-left">
           <div class="day-title"></div>
-          <div class="notes-preview"></div>
+          <div class="notes-display"></div>
         </div>
-        <div class="hover-tasks" aria-hidden="true">
-          <div class="hover-title">Top 3</div>
-          <div class="hover-task htask1"></div>
-          <div class="hover-task htask2"></div>
-          <div class="hover-task htask3"></div>
+        <div class="hover-tasks">
+          <div class="task-pill t1"></div>
+          <div class="task-pill t2"></div>
+          <div class="task-pill t3"></div>
         </div>
       </header>
       <div class="day-body">
