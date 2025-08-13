@@ -35,28 +35,22 @@
   </div>
 
   <main id="scrollContainer" class="scroll-container" aria-label="Scrollable day list">
-    <!-- Days will be injected here -->
   </main>
 
   <template id="dayTemplate">
-    <section class="day collapsed" data-date="" style="--title-size:16px; --notes-size:14px; --task-font:13px;">
+    <section class="day collapsed" data-date="">
       <header class="day-header">
-        <div class="day-title"></div>
-      </header>
-
-      <!-- NOTES PREVIEW VISIBLE IN COLLAPSED VIEW -->
-      <div class="notes-preview"></div>
-
-      <!-- HOVER TASKS OVERLAY (desktop hover) -->
-      <div class="task-hover" aria-hidden="true">
-        <div class="task-hover-inner">
-          <div class="task-item t1"></div>
-          <div class="task-item t2"></div>
-          <div class="task-item t3"></div>
+        <div class="head-left">
+          <div class="day-title"></div>
+          <div class="notes-preview"></div>
         </div>
-      </div>
-
-      <!-- EXPANDABLE EDITOR -->
+        <div class="hover-tasks" aria-hidden="true">
+          <div class="hover-title">Top 3</div>
+          <div class="hover-task htask1"></div>
+          <div class="hover-task htask2"></div>
+          <div class="hover-task htask3"></div>
+        </div>
+      </header>
       <div class="day-body">
         <div class="body-inner">
           <div class="tasks card">
