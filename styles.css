@@ -5,7 +5,7 @@
   --panel2:rgba(255,255,255,.06);
   --border:rgba(255,255,255,.12);
   --text:#e5e7eb;
-  --muted:rgba(229,231,235,.7);
+  --muted:rgba(229,231,235,.75);
   --accent:#6ee7b7;
   --accent2:#60a5fa;
 }
@@ -33,26 +33,28 @@ h1{margin:0;font-size:18px;letter-spacing:.3px}
 .scroll-container{height:calc(100vh - 104px); overflow:auto; padding:16px; cursor:grab}
 .scroll-container.dragging{cursor:grabbing}
 
-.day{background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.04)); border:1px solid rgba(255,255,255,.08); border-radius:18px; margin:12px auto; max-width:860px; transition: transform 140ms ease, box-shadow .2s ease, background .25s ease}
+/* Day card redesigned */
+.day{position:relative; background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.04)); border:1px solid rgba(255,255,255,.08); border-radius:18px; margin:12px auto; max-width:900px; transition: transform 140ms ease, box-shadow .2s ease, background .25s ease}
 .day:hover{transform:translateY(-1px); box-shadow:0 10px 26px rgba(0,0,0,.35)}
 
-.day-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px}
-.day-title{font-weight:600;font-size:16px;opacity:.95}
-.task-preview{display:flex;gap:6px}
-.pill{display:inline-block; max-width:180px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:5px 9px; border-radius:999px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.08); font-size:12px; opacity:.9; transition:transform .12s ease}
-.pill:hover{transform:scale(1.03)}
+.day-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px 16px}
+.day-title{font-weight:700;font-size:var(--title-size,16px);opacity:.96; letter-spacing:.2px}
 
-.day-body{overflow:hidden; border-top:1px dashed rgba(255,255,255,.1);}
-/* Animated expand/collapse */
-.day .day-body{max-height:0; opacity:0; transition:max-height .24s ease, opacity .2s ease}
+/* Notes preview always visible in collapsed */
+.notes-preview{padding:0 16px 16px 16px; font-size:var(--notes-size,14px); color:var(--muted); line-height:1.5; white-space:pre-wrap; word-break:break-word}
+
+/* Hover tasks overlay */
+.task-hover{pointer-events:none; position:absolute; inset:0; display:flex; align-items:flex-end; justify-content:flex-end; padding:12px; opacity:0; transform:translateY(4px); transition:opacity .18s ease, transform .18s ease}
+.day:hover .task-hover{opacity:1; transform:translateY(0)}
+.task-hover-inner{background:linear-gradient(135deg, rgba(96,165,250,.22), rgba(110,231,183,.18)); border:1px solid rgba(255,255,255,.18); backdrop-filter:blur(6px); padding:10px 12px; border-radius:14px; max-width:min(80%, 480px); box-shadow:0 10px 24px rgba(0,0,0,.35)}
+.task-item{font-weight:600; font-size:var(--task-font,13px); margin:3px 0; white-space:pre-wrap; word-break:break-word}
+
+/* Expand/collapse body */
+.day .day-body{max-height:0; opacity:0; overflow:hidden; border-top:1px dashed rgba(255,255,255,.1); transition:max-height .24s ease, opacity .2s ease}
 .day.expanded .day-body{max-height:720px; opacity:1}
-
 .body-inner{display:grid; grid-template-columns:1fr; gap:12px; padding:14px 16px}
-@media (min-width: 800px){
- .body-inner{grid-template-columns:1fr 1fr}
-}
+@media (min-width: 800px){ .body-inner{grid-template-columns:1fr 1fr} }
 .card{padding:12px; border-radius:14px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08)}
-.tasks,.notes{margin:0}
 label{display:block; font-size:12px; opacity:.7; margin-bottom:6px}
 .task-row{margin-bottom:8px}
 .task-input,.notes-input{width:100%; background:rgba(255,255,255,.06); color:var(--text); border:1px solid rgba(255,255,255,.14); border-radius:12px; padding:10px 12px; font-size:14px; outline:none; transition:border .15s ease, box-shadow .15s ease}

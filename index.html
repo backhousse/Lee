@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>My Calendar (Offline MVP)</title>
+  <title>My Calendar (v3)</title>
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#0b1020">
   <link rel="stylesheet" href="styles.css">
@@ -39,28 +39,31 @@
   </main>
 
   <template id="dayTemplate">
-    <section class="day collapsed" data-date="">
+    <section class="day collapsed" data-date="" style="--title-size:16px; --notes-size:14px; --task-font:13px;">
       <header class="day-header">
         <div class="day-title"></div>
-        <div class="task-preview">
-          <span class="pill task1"></span>
-          <span class="pill task2"></span>
-          <span class="pill task3"></span>
-        </div>
       </header>
+
+      <!-- NOTES PREVIEW VISIBLE IN COLLAPSED VIEW -->
+      <div class="notes-preview"></div>
+
+      <!-- HOVER TASKS OVERLAY (desktop hover) -->
+      <div class="task-hover" aria-hidden="true">
+        <div class="task-hover-inner">
+          <div class="task-item t1"></div>
+          <div class="task-item t2"></div>
+          <div class="task-item t3"></div>
+        </div>
+      </div>
+
+      <!-- EXPANDABLE EDITOR -->
       <div class="day-body">
         <div class="body-inner">
           <div class="tasks card">
             <label>Top 3 Tasks</label>
-            <div class="task-row">
-              <input type="text" class="task-input" data-idx="0" placeholder="Task 1" />
-            </div>
-            <div class="task-row">
-              <input type="text" class="task-input" data-idx="1" placeholder="Task 2" />
-            </div>
-            <div class="task-row">
-              <input type="text" class="task-input" data-idx="2" placeholder="Task 3" />
-            </div>
+            <div class="task-row"><input type="text" class="task-input" data-idx="0" placeholder="Task 1" /></div>
+            <div class="task-row"><input type="text" class="task-input" data-idx="1" placeholder="Task 2" /></div>
+            <div class="task-row"><input type="text" class="task-input" data-idx="2" placeholder="Task 3" /></div>
           </div>
           <div class="notes card">
             <label>Notes</label>

@@ -1,10 +1,9 @@
-// Offline-first vertical agenda (v2)
-// Changes:
-// - Lower bound: no days before 2025-08-01
-// - Stronger lazy-load guards to avoid runaway/infinite behavior
-// - Preserve scroll position when prepending
-// - Redesigned UI + animations
-// - Hover/click sounds via WebAudio
+// Calendar v3
+// - Collapsed tiles show date + full notes
+// - Hover reveals 3 tasks overlay (scales font based on content length)
+// - Dynamic font sizing per tile
+// - Reward sound on Save
+// - Lower bound date + scroll guards remain
 
 const SCROLL_CONTAINER = document.getElementById('scrollContainer');
 const DAY_TMPL = document.getElementById('dayTemplate');
@@ -15,9 +14,9 @@ const TODAY_BTN = document.getElementById('todayBtn');
 const COLLAPSE_ALL_BTN = document.getElementById('collapseAllBtn');
 
 const MIN_DATE = new Date('2025-08-01T00:00:00'); // lower bound
-const STORAGE_KEY = 'calendar_mvp_v2';
+const STORAGE_KEY = 'calendar_mvp_v3';
 
-// ---- WebAudio tiny sfx ----
+// ---- WebAudio sounds ----
 let audioCtx = null;
 let lastHoverTime = 0;
 function ensureAudio() {
@@ -26,34 +25,59 @@ function ensureAudio() {
   }
   if (audioCtx.state === 'suspended') audioCtx.resume();
 }
-function playBubble() {
+function playBubble() { // subtle hover tick
   ensureAudio();
   const now = audioCtx.currentTime;
   const o = audioCtx.createOscillator();
   const g = audioCtx.createGain();
   o.type = 'sine';
-  o.frequency.setValueAtTime(650, now);
+  o.frequency.setValueAtTime(640, now);
   o.frequency.exponentialRampToValueAtTime(360, now + 0.12);
-  g.gain.setValueAtTime(0.05, now);
+  g.gain.setValueAtTime(0.035, now);
   g.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
   o.connect(g).connect(audioCtx.destination);
   o.start(now);
   o.stop(now + 0.15);
 }
-function playClick() {
+function playReward(){ // satisfying save jingle (major triad arpeggio)
   ensureAudio();
   const now = audioCtx.currentTime;
-  const o = audioCtx.createOscillator();
+  const master = audioCtx.createGain();
+  master.gain.value = 0.08;
+  master.connect(audioCtx.destination);
+
+  const freqs = [523.25, 659.25, 783.99]; // C5, E5, G5
+  freqs.forEach((f, i) => {
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = 'triangle';
+    o.frequency.value = f;
+    const t0 = now + i*0.07;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.12, t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.35);
+    o.connect(g).connect(master);
+    o.start(t0);
+    o.stop(t0 + 0.36);
+  });
+
+  // soft noise sparkle
+  const noise = audioCtx.createBufferSource();
+  const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate*0.2, audioCtx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i=0;i<data.length;i++) data[i] = (Math.random()*2-1) * Math.pow(1 - i/data.length, 2);
+  noise.buffer = buffer;
+  const bp = audioCtx.createBiquadFilter();
+  bp.type = 'bandpass';
+  bp.frequency.value = 2000;
   const g = audioCtx.createGain();
-  o.type = 'square';
-  o.frequency.setValueAtTime(900, now);
-  g.gain.setValueAtTime(0.06, now);
-  g.gain.exponentialRampToValueAtTime(0.0001, now + 0.06);
-  o.connect(g).connect(audioCtx.destination);
-  o.start(now);
-  o.stop(now + 0.07);
+  g.gain.value = 0.03;
+  noise.connect(bp).connect(g).connect(master);
+  const t0 = now + 0.02;
+  noise.start(t0);
+  noise.stop(t0 + 0.18);
 }
-document.addEventListener('pointerdown', ensureAudio); // user gesture unlock
+document.addEventListener('pointerdown', ensureAudio);
 
 // ---- Utilities ----
 function ymd(d) {
@@ -85,14 +109,32 @@ function setDayData(key, data) {
   saveAll(all);
 }
 
+// ---- Dynamic sizing based on content ----
+function applySizing(node, tasks, notesText) {
+  const len = (notesText || '').length;
+  // title and notes font sizes based on notes length
+  let titleSize = 18, notesSize = 14;
+  if (len > 400) { titleSize = 14; notesSize = 13; }
+  else if (len > 200) { titleSize = 16; notesSize = 13.5; }
+  node.style.setProperty('--title-size', `${titleSize}px`);
+  node.style.setProperty('--notes-size', `${notesSize}px`);
+
+  // Tasks overlay font scaling based on combined length
+  const taskChars = (tasks.join(' ') || '').length;
+  let taskFont = 14;
+  if (taskChars > 120) taskFont = 12.5;
+  if (taskChars > 220) taskFont = 12;
+  node.style.setProperty('--task-font', `${taskFont}px`);
+}
+
 // ---- Bounds & initial range ----
 let today = new Date();
 today.setHours(0,0,0,0);
 if (today < MIN_DATE) today = new Date(MIN_DATE);
 
-const initialAfterDays = 120; // how many after today to render initially
-let daysRenderedBefore = Math.round((today - MIN_DATE) / (1000*60*60*24)); // how many can exist before
-if (daysRenderedBefore > 30) daysRenderedBefore = 30; // render at most 30 before today initially
+const initialAfterDays = 120;
+let daysRenderedBefore = Math.round((today - MIN_DATE) / (1000*60*60*24));
+if (daysRenderedBefore > 30) daysRenderedBefore = 30;
 let daysRenderedAfter = initialAfterDays;
 
 // ---- Render ----
@@ -105,22 +147,29 @@ function createDay(dateObj) {
   const title = node.querySelector('.day-title');
   title.textContent = fmtLong(dateObj);
 
-  // Load data
+  // Data
   const data = getDayData(key);
   const [t1,t2,t3] = data.tasks;
 
-  node.querySelector('.pill.task1').textContent = t1 || '—';
-  node.querySelector('.pill.task2').textContent = t2 || '—';
-  node.querySelector('.pill.task3').textContent = t3 || '—';
+  // Notes preview
+  const notesPreview = node.querySelector('.notes-preview');
+  const ntext = data.notes || '';
+  notesPreview.textContent = ntext || '—';
+
+  // Hover tasks overlay
+  node.querySelector('.task-hover .t1').textContent = (t1 || '—');
+  node.querySelector('.task-hover .t2').textContent = (t2 || '—');
+  node.querySelector('.task-hover .t3').textContent = (t3 || '—');
 
   // Body inputs
   const inputs = node.querySelectorAll('.task-input');
   inputs.forEach((inp,i)=> { inp.value = data.tasks[i] || ""; });
+  node.querySelector('.notes-input').value = data.notes || "";
 
-  const notes = node.querySelector('.notes-input');
-  notes.value = data.notes || "";
+  // Apply sizing
+  applySizing(node, [t1,t2,t3], ntext);
 
-  // Sounds
+  // Sounds on hover
   const header = node.querySelector('.day-header');
   header.addEventListener('mouseenter', () => {
     const now = performance.now();
@@ -129,13 +178,10 @@ function createDay(dateObj) {
       playBubble();
     }
   });
-  header.addEventListener('click', () => playClick());
 
-  // Expand/Collapse logic
+  // Expand/Collapse
   header.addEventListener('click', () => {
-    document.querySelectorAll('.day.expanded').forEach(d => {
-      if (d !== node) d.classList.remove('expanded');
-    });
+    document.querySelectorAll('.day.expanded').forEach(d => { if (d !== node) d.classList.remove('expanded'); });
     node.classList.toggle('expanded');
   });
   node.querySelector('.collapse-btn').addEventListener('click', (e)=>{
@@ -149,26 +195,31 @@ function createDay(dateObj) {
     const newTasks = Array.from(node.querySelectorAll('.task-input')).map(i=>i.value.trim());
     const newNotes = node.querySelector('.notes-input').value;
     setDayData(key, { tasks: newTasks, notes: newNotes });
-    node.querySelector('.pill.task1').textContent = newTasks[0] || '—';
-    node.querySelector('.pill.task2').textContent = newTasks[1] || '—';
-    node.querySelector('.pill.task3').textContent = newTasks[2] || '—';
+
+    // Update previews
+    node.querySelector('.task-hover .t1').textContent = newTasks[0] || '—';
+    node.querySelector('.task-hover .t2').textContent = newTasks[1] || '—';
+    node.querySelector('.task-hover .t3').textContent = newTasks[2] || '—';
+    node.querySelector('.notes-preview').textContent = newNotes || '—';
+
+    applySizing(node, newTasks, newNotes);
+
+    // Save animation + sound
     node.style.transform = 'scale(0.997)';
     setTimeout(()=> node.style.transform = '', 120);
-    playClick();
+    playReward();
   });
 
   return node;
 }
 
 function renderInitial() {
-  // Past days (but not before MIN_DATE)
   for (let i=daysRenderedBefore; i>=1; i--) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
     if (d < MIN_DATE) continue;
     SCROLL_CONTAINER.appendChild(createDay(d));
   }
-  // Today onward
   for (let i=0; i<=daysRenderedAfter; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() + i);
@@ -177,21 +228,19 @@ function renderInitial() {
 }
 renderInitial();
 
-// Labels for bounds
+// Labels
 const minLabel = document.getElementById('minDateLabel');
 const maxLabel = document.getElementById('maxDateLabel');
 minLabel.textContent = new Date(MIN_DATE).toLocaleDateString();
 let maxRenderedDate = new Date(today); maxRenderedDate.setDate(maxRenderedDate.getDate() + daysRenderedAfter);
 maxLabel.textContent = maxRenderedDate.toLocaleDateString();
 
-// Lazy extend when near bottom/top, with guards
+// Lazy extend with guards
 let isAppending = false;
 let isPrepending = false;
-
 SCROLL_CONTAINER.addEventListener('scroll', () => {
   const { scrollTop, scrollHeight, clientHeight } = SCROLL_CONTAINER;
 
-  // Append (bottom)
   if (!isAppending && scrollTop + clientHeight > scrollHeight - 800) {
     isAppending = true;
     const prevMax = daysRenderedAfter;
@@ -209,14 +258,11 @@ SCROLL_CONTAINER.addEventListener('scroll', () => {
     isAppending = false;
   }
 
-  // Prepend (top), but never before MIN_DATE
   if (!isPrepending && scrollTop < 400) {
-    // Can we actually add more before?
     const firstRendered = SCROLL_CONTAINER.querySelector('.day');
     if (firstRendered) {
       const firstDate = new Date(firstRendered.dataset.date + 'T00:00:00');
-      const nextDate = new Date(firstDate);
-      nextDate.setDate(firstDate.getDate() - 1);
+      const nextDate = new Date(firstDate); nextDate.setDate(firstDate.getDate() - 1);
       if (nextDate >= MIN_DATE) {
         isPrepending = true;
         const prevHeight = SCROLL_CONTAINER.scrollHeight;
@@ -229,7 +275,6 @@ SCROLL_CONTAINER.addEventListener('scroll', () => {
           frag.appendChild(createDay(d));
         }
         SCROLL_CONTAINER.prepend(frag);
-        // Preserve scroll position relative to content
         const newHeight = SCROLL_CONTAINER.scrollHeight;
         SCROLL_CONTAINER.scrollTop = scrollTop + (newHeight - prevHeight);
         isPrepending = false;
@@ -238,10 +283,8 @@ SCROLL_CONTAINER.addEventListener('scroll', () => {
   }
 });
 
-// Desktop drag-to-scroll
-let isDown = false;
-let startY;
-let scrollStart;
+// Drag to scroll (desktop)
+let isDown = false, startY, scrollStart;
 SCROLL_CONTAINER.addEventListener('mousedown', (e)=>{
   isDown = true;
   SCROLL_CONTAINER.classList.add('dragging');
@@ -271,7 +314,6 @@ EXPORT_BTN.addEventListener('click', ()=>{
   a.click();
   URL.revokeObjectURL(url);
 });
-
 IMPORT_INPUT.addEventListener('change', (e)=>{
   const file = e.target.files?.[0];
   if(!file) return;
@@ -280,17 +322,19 @@ IMPORT_INPUT.addEventListener('change', (e)=>{
     try {
       const json = JSON.parse(String(reader.result));
       saveAll(json);
-      // refresh preview text chips
       document.querySelectorAll('.day').forEach(section => {
         const key = section.dataset.date;
         const data = getDayData(key);
         const [t1,t2,t3] = data.tasks || ["","",""];
-        section.querySelector('.pill.task1').textContent = t1 || '—';
-        section.querySelector('.pill.task2').textContent = t2 || '—';
-        section.querySelector('.pill.task3').textContent = t3 || '—';
+        section.querySelector('.task-hover .t1').textContent = t1 || '—';
+        section.querySelector('.task-hover .t2').textContent = t2 || '—';
+        section.querySelector('.task-hover .t3').textContent = t3 || '—';
         section.querySelectorAll('.task-input').forEach((inp,i)=>{ inp.value = data.tasks?.[i] || ""; });
-        const notes = section.querySelector('.notes-input');
-        if (notes) notes.value = data.notes || "";
+        const notesArea = section.querySelector('.notes-input');
+        const np = section.querySelector('.notes-preview');
+        if (notesArea) notesArea.value = data.notes || "";
+        if (np) np.textContent = data.notes || '—';
+        applySizing(section, data.tasks || ["","",""], data.notes || '');
       });
       alert('Import complete!');
     } catch (err) {
@@ -300,7 +344,7 @@ IMPORT_INPUT.addEventListener('change', (e)=>{
   reader.readAsText(file);
 });
 
-// PWA install
+// Install PWA
 let deferredPrompt = null;
 window.addEventListener('beforeinstallprompt', (e)=>{
   e.preventDefault();
@@ -322,7 +366,7 @@ TODAY_BTN.addEventListener('click', ()=>{
   if (el) {
     el.scrollIntoView({ behavior:'smooth', block:'center' });
     el.classList.add('expanded');
-    setTimeout(()=> el.classList.remove('expanded'), 1500); // pulse
+    setTimeout(()=> el.classList.remove('expanded'), 1500);
   }
 });
 COLLAPSE_ALL_BTN.addEventListener('click', ()=>{
